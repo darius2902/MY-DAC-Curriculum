@@ -42,6 +42,18 @@ col1 col2 col3
 
 -- Answer
 
+SELECT
+    n1.index AS start_number,
+    n2.index AS second_number,
+    n3.index AS third_number
+FROM
+    myownschema.numbers n1
+JOIN
+    myownschema.numbers n2 ON n1.index = n2.index - 1
+JOIN
+    myownschema.numbers n3 ON n1.index = n3.index - 2;
+
+
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Run these once!
@@ -63,13 +75,59 @@ FROM myownschema.stars;
 
 -- Rectangle Answer:
 
+SELECT *
+FROM myownschema.stars AS s1
+LEFT JOIN myownschema.stars AS s2
+			ON s1.star = s2.star
+
+UNION ALL
+
+SELECT *
+FROM myownschema.stars AS s1
+LEFT JOIN myownschema.stars AS s2
+				ON s1.star = s2.star
+
+UNION ALL
+
+SELECT *
+FROM myownschema.stars AS s1
+LEFT JOIN myownschema.stars AS s2
+				ON s1.star = s2.star
 
 -- Triangle Answer: 
+
+SELECT 
+	s1.star,
+	s2.star,
+	s3.star
+FROM myownschema.stars AS s1
+LEFT JOIN myownschema.stars AS s2
+			ON s1.star = s2.star
+LEFT JOIN myownschema.stars AS s3
+			ON s1.star = s3.star
+
+UNION ALL
+
+SELECT 
+	s1.star,
+	s2.star,
+	'' AS blank
+FROM myownschema.stars AS s1
+LEFT JOIN myownschema.stars AS s2
+			ON s1.star = s2.star
+
+UNION ALL
+
+SELECT 
+	s1.star,
+	'' AS blank,
+	'' AS blank
+FROM myownschema.stars AS s1
 
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
--- Q3:
+-- Q3: 
 
 -- New TikTok users sign up with their emails. They confirmed their signup by replying to the text confirmation to activate their accounts. Users may receive multiple text messages 
 -- for account confirmation until they have confirmed their new account.
@@ -121,7 +179,15 @@ SELECT *
 FROM myownschema.texts;
 
 -- Answer:
-
+SELECT
+	ROUND(
+		CAST(COUNT(texts.email_id) AS decimal) / COUNT(DISTINCT emails.email_id),
+		2
+	) AS activation_rate
+FROM myownschema.emails
+LEFT JOIN myownschema.texts
+		ON emails.email_id = texts.email_id
+		AND texts.signup_action= 'Confirmed';
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -156,6 +222,21 @@ SELECT *
 FROM myownschema.zomato_orders;
 
 -- Answer:
+
+SELECT
+	wrong.order_id AS corrected_order_id,
+	CASE
+		WHEN t2.order_id IS NULL AND t1.order_id IS NULL THEN wrong.item
+		WHEN t1.order_id IS NULL AND t2.order_id IS NOT NULL THEN t2.item
+		WHEN t2.order_id IS NULL AND t1.order_id IS NOT NULL THEN t1.item
+	END AS item
+FROM myownschema.zomato_orders AS wrong
+LEFT JOIN myownschema.zomato_orders AS t1
+		ON wrong.order_id = (t1.order_id + 1)
+		AND t1.order_id % 2 = 1
+LEFT JOIN myownschema.zomato_orders AS t2
+		ON wrong.order_id = (t2.order_id - 1)
+		AND t2.order_id % 2 = 0;
 
 --------------------------------------------------------------------------------------------------------------------------------------------------
 

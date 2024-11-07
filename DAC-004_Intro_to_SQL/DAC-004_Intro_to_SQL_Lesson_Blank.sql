@@ -318,10 +318,40 @@ FROM production.product;
 SELECT *
 FROM sales.salesorderdetail;
 
+SELECT 
+	product.productid,
+	product.name AS productname,
+	COALESCE(SUM(salesorderdetail.orderqty),0) AS totalsalesquantity
+FROM production.product AS product
+LEFT JOIN sales.salesorderdetail AS salesorderdetail
+	ON product.productid = salesorderdetail.productid
+GROUP BY 
+	product.productid,
+	product.name
+ORDER BY 
+	COALESCE(SUM(salesorderdetail.orderqty),0) DESC;
 
 
 -- Q5: List all employees and their associated email addresses,  
 -- display their full name and email address.
+
+SELECT *
+FROM humanresources.employee;
+
+SELECT *
+FROM person.person;
+
+SELECT *
+FROM person.emailaddress;
+
+SELECT 
+	CONCAT(person.firstname, '', person.middlename, '', person.lastname) AS fullname,
+	emailaddress.emailaddress AS email
+FROM humanresources.employee AS employee
+LEFT JOIN person.person AS person
+	ON employee.businessentityid = person.businessentityid
+LEFT JOIN person.emailaddress AS emailaddress
+	ON employee.businessentityid = emailaddress.businessentityid;
 
 
 -- Retrieve a list of all individual customers id, firstname along with the total number of orders they have placed 
@@ -336,10 +366,29 @@ FROM sales.customer;
 SELECT *
 FROM sales.salesorderheader;
 
-
+SELECT
+	customer.customerid,
+	person.firstname,
+	COUNT(salesorderid) AS purchase,
+	ROUND(SUM(subtotal),2) AS cost
+FROM sales.customer AS customer
+LEFT JOIN person.person AS person
+	ON customer.personid = person.businessentityid;
+LEFT JOIN sales.salesorderheader AS salesorderheader
+	ON customer.customerid = salesorderheader.customerid
+GROUP BY 
+	customer.customerid,
+	person.firstname
+HAVING ROUND(SUM(subtotal), 2) IS NOT NULL;
 
 -- Q6: Can LEFT JOIN cause duplication? How?
 -- A6: 
+
+/*
+It depends on the relationship that both the tables present for the left join share.
+If it is a one-to-one relationship, the chance of having duplicates is unlikely.
+However, if it is a one-to-many relationship, there could be a chance for duplicates to be present.
+*/
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -347,12 +396,32 @@ FROM sales.salesorderheader;
 -- Write a query to retrieve all sales orders and their corresponding customers. If a sales order exists without an associated customer, 
 -- include the sales order in the result.
 
+SELECT *
+FROM sales.orderheader AS salesorderhead
+LIMIT 10;
+
+SELECT *
+FROM sales.customer
+LIMIT 10;
+
 SELECT 
     salesorderheader.salesorderid AS salesorderid, 
     salesorderheader.orderdate AS orderdate, 
     customer.customerid AS customerid, 
     customer.personid AS personid
+FROM sales.salesorderheader AS salesorderheader;
+
+SELECT
+	salesorderheader.salesorderid AS salesorderid, 
+    salesorderheader.orderdate AS orderdate,
+	customer.customerid AS customerid, 
+    customer.personid AS personid
 FROM sales.salesorderheader AS salesorderheader
+RIGHT JOIN sales.customer AS customer
+	ON salesorderheader.customerid = customer.customerid;
+
+
+
 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -366,6 +435,16 @@ SELECT
     employee.businessentityid AS employeeid,
     salesorderheader.salesorderid
 FROM humanresources.employee AS employee
+FULL OUTER JOIN sales.salesorderheader AS salesorderheader
+	ON employee.businessentityid = salesorderheader.salespersonid;
+
+SELECT *
+FROM humanresources.employee
+LIMIT 10;
+
+SELECT *
+FROM sales.salesorderheader
+LIMIT 10;
 
 		
 -- Write a query to retrieve a list of all employees and customers, and if either side doesn't have a FirstName, 
@@ -397,10 +476,20 @@ ORDER BY employee.employeeid;
 
 -- Write a query to generate all possible combinations of product categories and product models. Show the category name and the model name.
 
-SELECT 
-
+SELECT *
 FROM production.productcategory AS productcategory
+LIMIT 10;
 
+SELECT *
+FROM production.productcategory AS productmodel
+LIMIT 10;
+
+SELECT
+	productcategory.name as categoryname,
+	productionmodel.name as modelname
+FROM production.productcategory AS productcategory
+CROSS JOIN production.productmodel AS productionmodel
+ORDER BY productcategory.name ASC;
 
 -- Each category name is matched to each model name
 
@@ -408,7 +497,17 @@ FROM production.productcategory AS productcategory
 
 -- UNION, stacking the tables on top of each other without having duplicates
 
-
+SELECT 
+	firstname,
+	lastname,
+	CONCAT(firstname,'', lastname) AS fullname
+FROM person.person
+UNION
+SELECT
+	firstname,
+	lastname,
+	CONCAT(firstname,'', lastname) AS fullname
+FROM person.person;
 
 -- Union them together segregating employee and customer
 
@@ -416,9 +515,31 @@ SELECT *
 FROM person.person;
 
 SELECT *
+FROM humanresources.employee;
+
+SELECT *
 FROM sales.customer;
 
+SELECT
+	firstname,
+	lastname,
+	CONCAT(firstname,'',middlename,'', lastname) AS fullname,
+	'Employee' AS category
+FROM person.person AS person
+INNER JOIN humanresources.employee as employee
+	ON person.businessentityid = employee.businessentityid
 
+UNION
+
+SELECT
+	firstname,
+	lastname,
+	CONCAT(firstname,'',middlename,'', lastname) AS fullname,
+	'Customer' AS category
+FROM person.person AS person
+INNER JOIN sales.customer AS customer 
+	ON person.businessentityid = customer.personid
+WHERE customer.storeid IS NULL;
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -448,33 +569,79 @@ FROM purchasing.purchaseorderheader;
 -- Getting parts of the date out
 
 SELECT 
+	EXTRACT(YEAR FROM orderdate) AS year,
+	EXTRACT(QUARTER FROM orderdate) AS quarter,
+	EXTRACT(MONTH FROM orderdate) AS MONTH,
+	EXTRACT(WEEK FROM orderdate) AS WEEK,
+	EXTRACT(DAY FROM orderdate) AS DAY,
+	EXTRACT(HOUR FROM orderdate) AS HOUR,
+	EXTRACT(MINUTE FROM orderdate) AS MINUTE,
+	EXTRACT(SECOND FROM orderdate) AS SECOND,
 
+	CAST(orderdate as TIME) AS time,
+	CAST(orderdate as DATE) AS date
 FROM sales.salesorderheader;
+
 
 -- DATETIME manipulations
 
 SELECT
-
+	orderdate AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Singapore' as local_time,
+	CURRENT_DATE as today,
+	CURRENT_DATE + INTERVAL '10 days' AS add_days,
+	CURRENT_DATE - INTERVAL '10 days' AS minus_days,
+	CURRENT_DATE + INTERVAL '1 month' AS add_month
 FROM sales.salesorderheader
 WHERE territoryid = 1
 	AND EXTRACT(YEAR FROM orderdate) = 2011;
 
+
 -- Use string functions to format employee names and email addresses
-SELECT
+SELECT 
+	CAST(person.businessentityid AS int),
+	CAST(person.businessentityid AS numeric) / 2 AS numeric_id,
+	CAST(person.businessentityid AS decimal) / 2 AS decimal_id,
+	CAST(person.businessentityid AS VARCHAR(100)) AS varchar_id,
+	UPPER(person.lastname) as upperlastname,
+	LOWER(person.lastname) as upperlastname,
+	LENGTH(person.firstname) as firstnamelength,
 
+	LEFT(emailaddress.emailaddress, 10) as startemail,
+	RIGHT(emailaddress.emailaddress, 10) as startemail,
+	SUBSTRING(emailaddress.emailaddress, 1, 5) AS partialemail,
+	SUBSTRING(emailaddress.emailaddress, 3, 5) AS partialemail,
+	REPLACE(emailaddress.emailaddress, '@adventure-works.com','@gmail.com') AS new_email
+	
 FROM person.person AS person
+INNER JOIN person.emailaddress AS emailaddress
+	ON person.businessentityid = emailaddress.businessentityid
 
+
+
+/*
+CAST()
+UPPER()
+LOWER()
+LENGTH()
+LEFT()
+RIGHT()
+SUBSTRING()
+REPLACE()
+CONCAT()
+*/
 
 -- From the following table write a query in  SQL to find the  email addresses of employees and groups them by city. 
 -- Return top ten rows.
 
 SELECT 
 	address.city, 
-
 FROM person.businessentityaddress AS businessentityaddress  
+INNER JOIN
 
 GROUP BY 
 LIMIT 10;
+
+-- STRING_AGG
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -485,8 +652,15 @@ SELECT
 	productid,
 	name,
 	listprice,
+	CASE
+		WHEN listprice = 0 THEN 'Free'
+		WHEN listprice < 50 THEN 'Budget'
+		WHEN listprice BETWEEN 50 and 1000 THEN 'Mid-Range'
+		ELSE 'Premium'
+	END AS price_category
+FROM production.product
+ORDER BY listprice DESC;
 
-FROM production.product;
 
 -- Write a query to categorize sales orders based on the total amount (TotalDue). If the total amount is less than 1000, categorize it as "Low", 
 -- if it's between 1000 and 5000, categorize it as "Medium", and if it's greater than 5000, categorize it as "High".
