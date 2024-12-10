@@ -5,8 +5,13 @@ DAC-009_Hands_On_SQL_Tutorial
 DAC-016_Internal_Projects
 additional/
 DAC-006_Machine_Learning/datasets/*.csv
+<<<<<<< HEAD
 dacvenv/
 DAC-007_Web_Scraping/*Master*
 DAC-008_Intro_To_NLP/*Master*
 DAC-008_Intro_To_NLP/datasets/*.csv
 DAC-004_Intro_to_SQL/AdventureworksInstallation.md
+=======
+.venv/
+DAC-008_Intro_To_NLP/datasets/*.csv
+>>>>>>> refs/remotes/origin/main
